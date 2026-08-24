@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# tlk2me
 
-## Getting Started
+The AI phone line for charter captains. It answers the phone, quotes your
+trips, checks real availability, and writes the charter onto your calendar
+before the caller hangs up.
 
-First, run the development server:
+**$29 per booking, invoiced once a month. Reschedules are free. Cancel within
+3 days of booking and it never hits the bill.**
+
+## Running it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `/` — marketing site
+- `/dashboard` — bookings, availability, integrations, settings
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What's real and what isn't
 
-## Learn More
+This is a scaffold. The UI is complete and renders from placeholder data in
+`src/lib/mock-data.ts`. Everything that talks to the outside world is a stub
+that returns `501`:
 
-To learn more about Next.js, take a look at the following resources:
+| Route | Status |
+| --- | --- |
+| `GET /api/bookings` | Serves in-memory data |
+| `POST /api/bookings` | Stub |
+| `GET /api/availability` | Serves in-memory data |
+| `GET /api/integrations/google` | Stub — OAuth not wired |
+| `POST /api/calls` | Stub — telephony webhook |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+There is no database, no auth, and no payment processing yet. Buttons in the
+dashboard are not wired to handlers.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Layout
 
-## Deploy on Vercel
+```
+src/
+  app/
+    page.tsx              marketing page
+    dashboard/            captain-facing app
+    api/                  route stubs
+  components/             shared UI
+  lib/
+    types.ts              domain model
+    pricing.ts            the $29-per-booking rule
+    mock-data.ts          placeholder data
+    format.ts             date/time helpers
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## The billing rule, in code
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`src/lib/pricing.ts` holds the whole model:
+
+- `isBillable()` — a booking counts exactly once, when it has a calendar event
+  id behind it and wasn't cancelled inside the grace window. A reschedule keeps
+  the same event, so it can never produce a second charge.
+- `cancelledWithinGrace()` — cancelled within `CANCELLATION_GRACE_DAYS` (3) of
+  **when it was booked**, measured from `bookedAt`, and it never reaches the
+  bill. Cancelled after that, it counts: it held a real slot the captain
+  couldn't sell.
+- `monthlyInvoiceCents()` — nothing is charged as it happens. Bookings accrue
+  and go out as one invoice per calendar month.
+
+The placeholder bookings exercise every branch: a clean booking, one moved
+twice, a pending hold that never reached the calendar, a cancellation inside
+the window, and one outside it.
+
+## Next steps
+
+1. Database + captain auth
+2. Google Calendar OAuth and free/busy reads
+3. Telephony provider + the call agent loop
+4. Stripe, charging on calendar-event creation
+# tlk2me
