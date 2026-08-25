@@ -19,6 +19,23 @@ Then open http://localhost:3000.
 - `/` — marketing site
 - `/dashboard` — bookings, availability, integrations, settings
 
+## Supabase
+
+Connection only — there is no schema yet. `.env.local` holds the credentials
+and is gitignored; `.env.example` lists the variables.
+
+Three clients in `src/lib/supabase/`:
+
+| File | Key | Use |
+| --- | --- | --- |
+| `client.ts` | anon | browser |
+| `server.ts` | anon + session cookies | server components, route handlers |
+| `admin.ts` | service role, **bypasses RLS** | server-only; `server-only` makes a client import a build error |
+
+Nothing imports these yet. The app still renders from `src/lib/mock-data.ts`.
+No tables, no migrations, no queries — those come when the data model is
+settled.
+
 ## What's real and what isn't
 
 This is a scaffold. The UI is complete and renders from placeholder data in
@@ -72,7 +89,7 @@ the window, and one outside it.
 
 ## Next steps
 
-1. Database + captain auth
+1. Design the schema, then migrations + captain auth
 2. Google Calendar OAuth and free/busy reads
 3. Telephony provider + the call agent loop
 4. Stripe, charging on calendar-event creation
